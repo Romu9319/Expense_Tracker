@@ -2,7 +2,7 @@ import json
 import os
 
 
-def show_expenses():
+def read_json():
     if not os.path.isfile('data.json'):
         with open('data.json', 'w') as f:
             json.dump([], f)
