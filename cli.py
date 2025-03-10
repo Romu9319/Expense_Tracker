@@ -10,12 +10,15 @@ def cli():
 #CAMBIAR LOS ARGUMENT POR OPTION, VER COMO FUNCIONA CORRECTAMENTE EL --HELP
 # Add new Expense
 @cli.command()
-@click.argument('description', required=True, help="Brief description of spending")
-@click.argument('amount', required=True, type=int)#, help="Spent amount")
-@click.argument('date',  default=datetime.date.today())#, help="Spending date")
+@click.argument('description', required=True)
+@click.argument('amount', required=True, type=int)
+@click.option('--date',  default=datetime.date.today(), help="Spending date")
 @click.pass_context
 def add(ctx, description, amount, date):
-    if description.strip() == "":
+    """
+        Añade los gastos
+    """
+    if not description.strip():
         ctx.fail("Task description is required")
     
     if not amount:
@@ -38,7 +41,6 @@ def add(ctx, description, amount, date):
     data.append(new_expense)
     json_manager.add_expenses(data)
     click.echo(f"New expense with id {expense_id} has been added")
-
 
 
 if __name__ == '__main__':
