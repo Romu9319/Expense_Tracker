@@ -53,6 +53,7 @@ def add(ctx, description, amount, date):
 def update(ctx, id, description, amount, date):
     """
     Actualiza los datos de los gastos
+
     """
     if not description.strip():
         ctx.fail("Task description is required")
@@ -79,7 +80,7 @@ def update(ctx, id, description, amount, date):
                     ctx.fail("Invalid date format! Please use YYYY-MM-DD.")
             expense_found = True
             break
-        
+
     if expense_found:
         json_manager.add_expenses(data)
         click.echo(f"Expense with id {expense_id} has been updated")
@@ -87,6 +88,28 @@ def update(ctx, id, description, amount, date):
     if not expense_found:
         click.echo(f"Expense with id {expense_id} not found")
 
+# Delete task by id
+@cli.command()
+@click.argument("id", type=str)
+@click.pass_context
+def delete(ctx, id):
+    """
+    Borra un gasto a travez de su id
+    """
+    try:
+        expense_id = int(id)
+    except ValueError:
+        ctx.fail("A numeric ID is required, try again")
+    
+    data = json_manager.read_json()
+    expense = next((expense for expense in data if expense["id"] == expense_id), None)
+
+    if not expense:
+        click.echo(f"Expense with id {id} not found")
+    else: 
+        data.remove(expense)
+        json_manager.add_expenses(data)
+        click.echo(f"Expense with id {id} has been deleted")
 
 
 if __name__ == '__main__':
