@@ -1,6 +1,7 @@
 import json_manager
 import click
 import datetime
+from tabulate import tabulate
 
 
 @click.group()
@@ -110,6 +111,23 @@ def delete(ctx, id):
         data.remove(expense)
         json_manager.add_expenses(data)
         click.echo(f"Expense with id {id} has been deleted")
+
+@cli.command() #### APLICAR CONTROL DE ERRORES
+@click.pass_context
+def list_expenses(ctx):
+    """
+        Muestra en forma de tabla un resumen de los gastos guardados
+    """
+    try:
+        data = json_manager.read_json()
+    except ValueError:
+        ctx.fail("no hay datos guardados")
+
+    table = [[expense["id"],expense["description"],expense["date"], expense["amount"]] for expense in data]
+
+    headers = ["ID", "Date", "Description", "Amount"]
+
+    click.echo(tabulate(table, headers=headers, tablefmt="plain"))
 
 
 if __name__ == '__main__':
