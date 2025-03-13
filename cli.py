@@ -12,7 +12,7 @@ def cli():
 # Add new Expense
 @cli.command()
 @click.argument('description', required=True)
-@click.argument('amount', required=True, type=int)
+@click.argument('amount', required=True, type=float)
 @click.option('--date',  default=datetime.date.today(), help="Spending date")
 @click.pass_context
 def add(ctx, description, amount, date):
@@ -46,9 +46,9 @@ def add(ctx, description, amount, date):
 
 # Update Expense by id
 @cli.command()
-@click.argument('id', type=str) #ver por que puse tipo id str y no int
-@click.argument('description', type=str)
-@click.argument('amount', type=int)
+@click.argument('id', type=int) #ver por que puse tipo id str y no int
+@click.argument('description', required=False, type=str)
+@click.argument('amount',required=False, type=float)
 @click.option('--date', help="Modify the spending date")
 @click.pass_context
 def update(ctx, id, description, amount, date):
@@ -57,23 +57,18 @@ def update(ctx, id, description, amount, date):
 
     """
     if not description.strip():
-        ctx.fail("Task description is required")
-
-    try:
-        expense_id = int(id)
-    except ValueError:
-        ctx.fail("A numeric ID is required, try again")
+        ctx.fail("Task description is required")    
 
     data = json_manager.read_json()
     expense_found = False
 
     for expense in data:
-        if expense["id"] == expense_id:
-            if description is not None:
+        if expense["id"] == id:
+            if description:
                 expense["description"] = description
-            if amount is not None:
+            if amount:
                 expense["amount"] = amount
-            if date is not None:
+            if date:
                  try:
                     datetime.datetime.strptime(date, "%Y-%m-%d")
                     expense["date"] = date
@@ -84,24 +79,19 @@ def update(ctx, id, description, amount, date):
 
     if expense_found:
         json_manager.add_expenses(data)
-        click.echo(f"Expense with id {expense_id} has been updated")
+        click.echo(f"Expense with id {id} has been updated")
     
     if not expense_found:
-        click.echo(f"Expense with id {expense_id} not found")
+        click.echo(f"Expense with id {id} not found")
 
 # Delete task by id
 @cli.command()
-@click.argument("id", type=str)
+@click.argument("id", type=int)
 @click.pass_context
 def delete(ctx, id):
     """
     Borra un gasto a travez de su id
-    """
-    try:
-        expense_id = int(id)
-    except ValueError:
-        ctx.fail("A numeric ID is required, try again")
-    
+    """    
     data = json_manager.read_json()
     expense = next((expense for expense in data if expense["id"] == expense_id), None)
 
@@ -129,6 +119,29 @@ def list_expenses(ctx):
 
     click.echo(tabulate(table, headers=headers, tablefmt="plain"))
 
+@cli.command()
+@click.pass_context
+def summary(ctx):
+    """
+    Muestra un resumen del total de gastos
+    """
+    try:
+        data = json_manager.read_json()
+    except ValueError:
+        ctx.fail("no hay datos guardados")
+
+    summary_expenses = 0 
+    summary_expenses  = sum(expense["amount"] for expense in data)
+
+    if not summary_expenses:
+        click.echo("No tiene gastos registrados")
+    else:
+        click.echo(f"Total of expenses: ${summary_expenses}")
+
 
 if __name__ == '__main__':
     cli()
+
+
+# TENGO QUE CAMBIAR LOS ARGUMENTS POR OPTIONS YA QUE EN CASO DE QUERER PASAR 
+# SOLO UNO DE LOS CAMPOS NO RECONOCE A QUE CAMPO ME ESTOY DIRIGIENDO 
