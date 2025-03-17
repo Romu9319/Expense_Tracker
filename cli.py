@@ -46,7 +46,7 @@ def add(ctx, description, amount, date):
 
 # Update Expense by id
 @cli.command()
-@click.argument('id', type=int) #ver por que puse tipo id str y no int
+@click.argument('id', type=int)
 @click.argument('description', required=False, type=str)
 @click.argument('amount',required=False, type=float)
 @click.option('--date', help="Modify the spending date")
@@ -93,7 +93,7 @@ def delete(ctx, id):
     Borra un gasto a travez de su id
     """    
     data = json_manager.read_json()
-    expense = next((expense for expense in data if expense["id"] == expense_id), None)
+    expense = next((expense for expense in data if expense["id"] == id), None)
 
     if not expense:
         click.echo(f"Expense with id {id} not found")
@@ -130,13 +130,12 @@ def summary(ctx):
     except ValueError:
         ctx.fail("no hay datos guardados")
 
-    summary_expenses = 0 
     summary_expenses  = sum(expense["amount"] for expense in data)
 
     if not summary_expenses:
         click.echo("No tiene gastos registrados")
     else:
-        click.echo(f"Total of expenses: ${summary_expenses}")
+        click.echo(f"Total of expenses: ${summary_expenses:.2f}")
 
 
 if __name__ == '__main__':
