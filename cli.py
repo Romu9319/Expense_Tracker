@@ -43,12 +43,11 @@ def add(ctx, description, amount, date):
     json_manager.add_expenses(data)
     click.echo(f"New expense with id {expense_id} has been added")
 
-
 # Update Expense by id
 @cli.command()
-@click.argument('id', type=int)
-@click.argument('description', required=False, type=str)
-@click.argument('amount',required=False, type=float)
+@click.option('--id', type=int, help="Indique el id del gasto")
+@click.option('--description', required=False, type=str)
+@click.option('--amount',required=False, type=float)
 @click.option('--date', help="Modify the spending date")
 @click.pass_context
 def update(ctx, id, description, amount, date):
@@ -56,7 +55,7 @@ def update(ctx, id, description, amount, date):
     Actualiza los datos de los gastos
 
     """
-    if not description.strip():
+    if description is not None and not description.strip():
         ctx.fail("Task description is required")    
 
     data = json_manager.read_json()
@@ -138,9 +137,35 @@ def summary(ctx):
         click.echo(f"Total of expenses: ${summary_expenses:.2f}")
 
 
+from datetime import datetime
+@cli.command()
+@click.option("--month", required=True, type=int, help="Indicar el mes por el cual se filtraran los gastos")
+@click.pass_context
+def month(ctx, month):
+    """
+    Filtrara los datos por mes
+    """
+    try:
+        data = json_manager.read_json()
+    except ValueError:
+        ctx.fail("no hay datos guardados")
+
+    if month < 1 or month > 12:
+        ctx.fail("el mes debe estar entre 1 y 12")
+
+    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+    #dates = [(dates for dates in data)]
+    expenses_month = sum(expense["amount"] for expense in data if datetime.strptime(expense["date"], "%Y-%m-%d").month == month)
+
+    if not expenses_month:
+        click.echo("No tiene gastos registrados")
+    else:
+        click.echo(f"Total of expenses in {months[month - 1]}: ${expenses_month:.2f}")
+
+
+
+
 if __name__ == '__main__':
     cli()
 
-
-# TENGO QUE CAMBIAR LOS ARGUMENTS POR OPTIONS YA QUE EN CASO DE QUERER PASAR 
-# SOLO UNO DE LOS CAMPOS NO RECONOCE A QUE CAMPO ME ESTOY DIRIGIENDO 
