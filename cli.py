@@ -1,6 +1,7 @@
 import json_manager
 import click
 import datetime
+from datetime import date
 from tabulate import tabulate
 
 
@@ -9,15 +10,14 @@ def cli():
     pass
 
 
-# Add new Expense
 @cli.command()
-@click.argument('description', required=True)
-@click.argument('amount', required=True, type=float)
+@click.option('--description', required=True, help="Add a description about your expense")
+@click.option('--amount', required=True, type=float, help="Enter the amount spent")
 @click.option('--date',  default=datetime.date.today(), help="Spending date")
 @click.pass_context
 def add(ctx, description, amount, date):
     """
-        Añade los gastos
+    Add a description of the expenses and the amount spent
     """
     if not description.strip():
         ctx.fail("Task description is required")
@@ -26,7 +26,7 @@ def add(ctx, description, amount, date):
         ctx.fail("The amount spent is required")
     
     try:
-        datetime.datetime.strptime(date, "%Y-%m-%d")
+        datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
         ctx.fail("Invalid date format! Please use YYYY-MM-DD.")
 
@@ -43,17 +43,16 @@ def add(ctx, description, amount, date):
     json_manager.add_expenses(data)
     click.echo(f"New expense with id {expense_id} has been added")
 
-# Update Expense by id
+
 @cli.command()
-@click.option('--id', type=int, help="Indique el id del gasto")
-@click.option('--description', required=False, type=str)
-@click.option('--amount',required=False, type=float)
+@click.option('--id', required=True, type=int, help="Indique el id del gasto")
+@click.option('--description', required=False, type=str, help="Add a description about your expense")
+@click.option('--amount',required=False, type=float, help="Enter the amount spent")
 @click.option('--date', help="Modify the spending date")
 @click.pass_context
 def update(ctx, id, description, amount, date):
     """
-    Actualiza los datos de los gastos
-
+    A way to update the description of the expenses and their quantity 
     """
     if description is not None and not description.strip():
         ctx.fail("Task description is required")    
@@ -85,11 +84,11 @@ def update(ctx, id, description, amount, date):
 
 # Delete task by id
 @cli.command()
-@click.argument("id", type=int)
+@click.option("--id", required=True, type=int)
 @click.pass_context
 def delete(ctx, id):
     """
-    Borra un gasto a travez de su id
+    Delete the record of an expense through its id
     """    
     data = json_manager.read_json()
     expense = next((expense for expense in data if expense["id"] == id), None)
@@ -105,12 +104,12 @@ def delete(ctx, id):
 @click.pass_context
 def list_expenses(ctx):
     """
-        Muestra en forma de tabla un resumen de los gastos guardados
+    Displays a table with the summary of expenses
     """
     try:
         data = json_manager.read_json()
     except ValueError:
-        ctx.fail("no hay datos guardados")
+        ctx.fail("There are no recorded expenses")
 
     table = [[expense["id"],expense["description"],expense["date"], expense["amount"]] for expense in data]
 
@@ -122,48 +121,60 @@ def list_expenses(ctx):
 @click.pass_context
 def summary(ctx):
     """
-    Muestra un resumen del total de gastos
+    Shows a summary of total expenses
     """
     try:
         data = json_manager.read_json()
     except ValueError:
-        ctx.fail("no hay datos guardados")
+        ctx.fail("There are no recorded expenses")
 
     summary_expenses  = sum(expense["amount"] for expense in data)
 
     if not summary_expenses:
-        click.echo("No tiene gastos registrados")
+        click.echo("There are no recorded expenses")
     else:
         click.echo(f"Total of expenses: ${summary_expenses:.2f}")
 
 
-from datetime import datetime
 @cli.command()
-@click.option("--month", required=True, type=int, help="Indicar el mes por el cual se filtraran los gastos")
+@click.argument("month", required=True, type=int)
 @click.pass_context
 def month(ctx, month):
     """
-    Filtrara los datos por mes
+    Filter expenses per month
     """
+    if month < 1 or month > 12:
+        ctx.fail("You must select a month between 1 and 12 ")
+    
+    
     try:
         data = json_manager.read_json()
-    except ValueError:
-        ctx.fail("no hay datos guardados")
+        if not isinstance(data, list):
+            ctx.fail("Expenses file could be in incorrect or damaged format.")
+        if not data:
+            ctx.fail("There are no recorded expenses.")
+    except (ValueError, FileNotFoundError) as e:
+        ctx.fail(f"Error reading data: {str(e)}")
 
-    if month < 1 or month > 12:
-        ctx.fail("el mes debe estar entre 1 y 12")
-
+    
     months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-    #dates = [(dates for dates in data)]
-    expenses_month = sum(expense["amount"] for expense in data if datetime.strptime(expense["date"], "%Y-%m-%d").month == month)
+    
+    try:
+        expenses_month = sum(
+            expense["amount"] 
+            for expense in data 
+            if expense["date"] and expense["amount"] and isinstance(expense["amount"], (int, float))
+            and datetime.datetime.strptime(expense["date"], "%Y-%m-%d").month == month
+        )
+    except (KeyError, ValueError, TypeError) as e:
+        ctx.fail(f"Error processing data: {str(e)}")
+
 
     if not expenses_month:
-        click.echo("No tiene gastos registrados")
+        click.echo(f"There are not recorded expenses for {months[month - 1]}")
     else:
         click.echo(f"Total of expenses in {months[month - 1]}: ${expenses_month:.2f}")
-
-
 
 
 if __name__ == '__main__':
